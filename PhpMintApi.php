@@ -50,11 +50,15 @@ class PhpMintApi {
 	 * @param string $cookieFilePath Absolute path to writeable file
 	 */
 	function __construct($email, $password, $cookieFilePath) {
+
+		// Make sure the cookie jar is writeable
+		if (!file_exists($cookieFilePath) || !is_writable($cookieFilePath)) {
+			throw new Exception('Cookie file does not exist or is not writeable.');
+		}
+
 		$this->mintUserEmail = $email;
 		$this->mintUserPassword = $password;
 		$this->cookieFilePath = $cookieFilePath;
-
-		// TODO: Throw exception if cookie file is not readable/writable
 	}
 
 	/**
@@ -97,7 +101,15 @@ class PhpMintApi {
 	 */
 	public function getTransactions($outputFilePointer = null) {
 
-		// TODO: Throw exception if $outputFilePointer is not a valid file pointer resource
+		// Throw exception if $outputFilePointer is not a valid file pointer resource
+		if (isset($outputFilePointer)) {
+			$streamMeta = stream_get_meta_data($outputFilePointer);
+			if (!isset($streamMeta['wrapper_type']) || $streamMeta['wrapper_type'] != 'plainfile') {
+				throw new Exception('Invalid resource type. File pointer required for output paramenter.');
+				return false;
+			}
+			unset($streamMeta);
+		}
 
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $this->mintBaseUrl . '/' . $this->mintTransactionsAction);
